@@ -11,7 +11,7 @@ import { CopilotKit } from '@copilotkit/react-core';
 import { CopilotChat } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import { useSharedContext } from "@/lib/shared-context";
-
+import { instructions } from "@/lib/prompts";
 export function ChatInterface() {
   const { prData } = useSharedContext()
   return (
@@ -19,8 +19,8 @@ export function ChatInterface() {
       <div className="flex items-center justify-between border-b px-4 py-4">
         <h2 className="font-semibold">EnterpriseX Assistant</h2>
       </div>
-      <CopilotChat className="h-full"
-        instructions={`You are a helpful assistant that can help the user with their questions and tasks. Always assume username is "Jon Snow". If user asks someone's PR dont show the data in just text, use GenerateChartBasedOnUserPRData tool to show the data in pie-chart. Once generated the chart, just reply with a summary of the chart. Dont generate the entire data once again. When searching for a user's PR data, use the following data:  ${JSON.stringify(prData)}`}
+      <CopilotChat className="h-a py-4"
+        instructions={instructions.replace("{prData}", JSON.stringify(prData))}
       />
     </div>
   )

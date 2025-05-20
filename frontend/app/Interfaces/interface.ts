@@ -12,3 +12,8 @@ export interface PRData {
     repository: string;
     branch: string;
 }
+
+export interface chartData {
+    name: string;
+    value: number;
+}

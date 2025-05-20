@@ -12,6 +12,7 @@ import { useSharedContext } from "@/lib/shared-context"
 import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core"
 import { PieChart, Pie, Cell, Tooltip } from "recharts"
 import { PRPieData } from "./pr-pie-data"
+import { PRReviewBarData } from "./pr-review-bar-data"
 // Sample data for the developer dashboard
 const tableColumns = [
   {
@@ -72,6 +73,25 @@ const chartData = [
     "Test Coverage": 90,
   },
 ]
+
+const status = [{
+  name: "approved",
+  color: "bg-green-300",
+  value: "rgb(134 239 172)"
+}, {
+  name: "needs_revision",
+  color: "bg-yellow-300",
+  value: "rgb(253 224 71)"
+}, {
+  name: "merged",
+  color: "bg-purple-300",
+  value: "rgb(216 180 254)"
+}, {
+  name: "in_review",
+  color: "bg-blue-300",
+  value: "rgb(147 197 253)"
+}]
+
 export function DeveloperDashboard() {
   const { prData, setPrData } = useSharedContext()
   const [viewMode, setViewMode] = useState<"table" | "chart">("table")
@@ -99,12 +119,26 @@ export function DeveloperDashboard() {
     }
   })
 
+  useCopilotAction({
+    name: "GenerateChartBasedOnPRReviewStatus",
+    description: `Generate a bar-chart based on the PR data which are only in needs_revision or in_review status for specific user`,
+    parameters: [
+      {
+        name: "userId",
+        type: "number",
+        description: "The id of the user for whom the PR data is to be fetched",
+      }
+    ],
+    render: ({ args }: any) => {
+      return <PRReviewBarData args={args} />
+    }
+  })
+
 
   async function getPRData() {
     try {
       const res = await getPRDataService()
       setPrData(res)
-      console.log(res)
     } catch (error) {
       console.log(error)
     }

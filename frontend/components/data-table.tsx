@@ -44,7 +44,7 @@ export function DataTable({ columns, data }: DataTableProps) {
                 onClick={() => handleRowClick(rowIndex)}
               >
                 {columns.map((column) => (
-                  <TableCell key={column.accessorKey} className="">
+                  <TableCell key={column.accessorKey} className="w-2">
                     {column.accessorKey === "status" ? (
                       <StatusBadge status={row[column.accessorKey]} />
                     ) : (

@@ -1,6 +1,11 @@
 "use client"
 
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "@/components/ui/chart"
+// import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "@/components/ui/chart"
+import { Pie, PieChart, Cell, Tooltip } from "recharts"
+import { useSharedContext } from "@/lib/shared-context"
+import { useEffect, useState } from "react"
+import { PRData, chartData } from "@/app/Interfaces/interface"
+import { CustomPieTooltip } from "./pr-pie-data"
 
 interface DataChartProps {
   data: Record<string, any>[]
@@ -8,7 +13,35 @@ interface DataChartProps {
 
 export function DataChart({ data }: DataChartProps) {
   // Extract keys excluding 'name'
-  const dataKeys = Object.keys(data[0]).filter((key) => key !== "name")
+  // const dataKeys = Object.keys(data[0]).filter((key) => key !== "name")
+  const [chartData, setChartData] = useState<chartData[]>([])
+  const {prData} = useSharedContext()
+  const status = [{
+    name: "approved",
+    color: "bg-green-300",
+    value: "rgb(134 239 172)"
+  }, {
+    name: "needs_revision",
+    color: "bg-yellow-300",
+    value: "rgb(253 224 71)"
+  }, {
+    name: "merged",
+    color: "bg-purple-300",
+    value: "rgb(216 180 254)"
+  }, {
+    name: "in_review",
+    color: "bg-blue-300",
+    value: "rgb(147 197 253)"
+  }]
+  useEffect(() => {
+    let data = status.map((status) => {
+      return {
+        name: status.name,
+        value: prData.filter((pr : PRData)  => pr.status === status.name).length
+      }
+    })
+    setChartData(data)
+  }, [])
 
   // Generate colors for each data key
   const colors = [
@@ -20,47 +53,43 @@ export function DataChart({ data }: DataChartProps) {
   ]
 
   return (
-    <div className="h-[400px] w-full">
-      <style jsx global>{`
-        :root {
-          --chart-1: 221 83% 53%;
-          --chart-2: 142 76% 36%;
-          --chart-3: 355 78% 56%;
-          --chart-4: 43 96% 56%;
-          --chart-5: 262 83% 58%;
-        }
-        .dark {
-          --chart-1: 217 91% 60%;
-          --chart-2: 142 71% 45%;
-          --chart-3: 346 84% 61%;
-          --chart-4: 48 96% 53%;
-          --chart-5: 269 80% 64%;
-        }
-      `}</style>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-          <XAxis dataKey="name" className="text-xs fill-muted-foreground" />
-          <YAxis className="text-xs fill-muted-foreground" />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "hsl(var(--background))",
-              borderColor: "hsl(var(--border))",
-              borderRadius: "0.5rem",
-              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
-            }}
-            itemStyle={{ padding: "4px 0" }}
-            labelStyle={{ fontWeight: "bold", marginBottom: "4px" }}
-          />
-          <Legend
-            wrapperStyle={{ paddingTop: "10px" }}
-            formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
-          />
-          {dataKeys.map((key, index) => (
-            <Bar key={key} dataKey={key} fill={colors[index % colors.length]} radius={[4, 4, 0, 0]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <>
+      {/* <div className="flex-1 p-4 rounded-2xl shadow-lg flex flex-col items-center min-w-[250px] max-w-[350px]"> */}
+        {/* <h2 className="text-2xl font-semibold mb-2 text-gray-700 text-center">PR Status Distribution</h2> */}
+        <div className="h-[250px] flex flex-col items-center justify-center align-center">
+          <PieChart width={260} height={200}>
+            <Pie
+              data={chartData}
+              cx={130}
+              cy={90}
+              innerRadius={50}
+              outerRadius={90}
+              fill="#94a3b8"
+              paddingAngle={0}
+              dataKey="value"
+              label
+              labelLine={false}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={status.find((status) => status.name === entry.name)?.value} />
+              ))}
+            </Pie>
+            {/* bg-white p-2 rounded shadow text-black */}
+            <Tooltip content={<CustomPieTooltip />} />
+          </PieChart>
+          {/* Custom Legend */}
+          <div className="flex flex-row justify-center gap-6 mt-2">
+            {chartData.map((entry, idx) => (
+              <div key={entry.name} className="flex items-center gap-1">
+                <span
+                  className={`inline-block w-4 h-4 rounded-full ${status.find((status) => status.name === entry.name)?.color}`}
+                />
+                <span className="text-sm text-black">{entry.name.split("_").join(" ")}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      {/* </div> */}
+    </>
   )
 }

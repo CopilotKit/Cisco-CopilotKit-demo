@@ -86,7 +86,7 @@ export function PRPieData({ args }: any) {
 }
 
 
-const CustomPieTooltip = ({ active, payload }: any) => {
+export const CustomPieTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const { name } = payload[0].payload;
         return (
