@@ -1,12 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from "@/components/data-table"
 import { DataChart } from "@/components/data-chart"
 import { Button } from "@/components/ui/button"
 import { BarChart3, Table2 } from "lucide-react"
-
+import { getPRDataService } from "@/app/Services/service"
+import { PRData } from "@/app/Interfaces/interface"
+import { useSharedContext } from "@/lib/shared-context"
+import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core"
+import { PieChart, Pie, Cell, Tooltip } from "recharts"
 // Sample data for the developer dashboard
 const tableColumns = [
   {
@@ -14,20 +18,20 @@ const tableColumns = [
     header: "ID",
   },
   {
-    accessorKey: "name",
-    header: "Repository",
+    accessorKey: "title",
+    header: "TITLE",
+  },
+  {
+    accessorKey: "author",
+    header: "AUTHOR",
+  },
+  {
+    accessorKey: "repository",
+    header: "REPOSITORY",
   },
   {
     accessorKey: "status",
-    header: "Status",
-  },
-  {
-    accessorKey: "lastCommit",
-    header: "Last Commit",
-  },
-  {
-    accessorKey: "buildTime",
-    header: "Build Time",
+    header: "STATUS",
   },
 ]
 
@@ -107,8 +111,125 @@ const chartData = [
   },
 ]
 
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28CFE', '#FF6699'];
+
 export function DeveloperDashboard() {
+  const { prData, setPrData } = useSharedContext()
   const [viewMode, setViewMode] = useState<"table" | "chart">("table")
+  useEffect(() => {
+    getPRData()
+  }, [])
+
+  useCopilotReadable({
+    description: "A list of all the PR Data",
+    value: JSON.stringify(prData)
+  })
+
+  useCopilotAction({
+    name: "GenerateChartBasedOnUserPRData",
+    description: `Generate a pie-chart based on the PR data for a user`,
+    parameters: [
+      {
+        name: "userId",
+        type: "number",
+        description: "The id of the user for whom the PR data is to be fetched",
+      }
+    ],
+    handler: async ({ userId }: any) => {
+      debugger
+      let userPRData = prData.filter((pr: PRData) => pr.userId === userId);
+      console.log(userPRData, userId);
+    },
+    render: ({ args }) => {
+      const [userPRData, setUserPRData] = useState<any[]>([])
+      const status = [{
+        name: "approved",
+        color: "bg-green-300",
+        value: "rgb(134 239 172)"
+      }, {
+        name: "needs_revision",
+        color: "bg-yellow-300",
+        value: "rgb(253 224 71)"
+      }, {
+        name: "merged",
+        color: "bg-purple-300",
+        value: "rgb(216 180 254)"
+      }, {
+        name: "in_review",
+        color: "bg-blue-300",
+        value: "rgb(147 197 253)"
+      }]
+      useEffect(() => {
+        console.log(args?.userId, prData.filter((pr: PRData) => pr.userId === args?.userId))
+        const pieData = Object.entries(getStatusCounts(prData.filter((pr: PRData) => pr.userId === args?.userId))).map(([status, count]) => ({
+          name: status,
+          value: count,
+        }));
+        setUserPRData(pieData)
+      }, [args?.userId])
+      const getStatusCounts = (data: PRData[]) => {
+        return data.reduce((acc: any, pr: PRData) => {
+          acc[pr.status] = (acc[pr.status] || 0) + 1;
+          return acc;
+        }, {});
+      }
+      return (
+        <div className="flex-1 p-4 rounded-2xl shadow-lg flex flex-col items-center min-w-[250px] max-w-[350px]">
+          <h2 className="text-xl font-semibold mb-2 text-gray-700 text-center">PR Status Distribution</h2>
+          <div className="h-[180px] flex flex-col items-center justify-center">
+            <PieChart width={260} height={180}>
+              <Pie
+                data={userPRData}
+                cx={130}
+                cy={90}
+                innerRadius={30}
+                outerRadius={70}
+                paddingAngle={0}
+                dataKey="value"
+                labelLine={false}
+                label={({ value }) => value}
+              >
+                {userPRData.map((entry, index: number) => (
+                  <Cell key={`cell-${index}`} fill={status.find((s: any) => s.name === entry.name)?.value} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomPieTooltip />} />
+              {/* <Tooltip contentStyle={{ background: '', border: 'none', color: 'white' }} /> */}
+            </PieChart>
+          </div>
+          <div className="flex flex-col items-center mt-4">
+            {chunkArray(status, 2).map((row, rowIdx) => (
+              <div
+                key={rowIdx}
+                className="flex flex-row justify-center items-center gap-x-6 gap-y-2 w-full"
+              >
+                {row.map((entry: any) => (
+                  <div key={entry.name} className="flex items-center gap-1 min-w-[110px]">
+                    <span
+                      className={`inline-block w-4 h-4 rounded-full ${entry.color}`}
+                      // style={{ backgroundColor: entry.color }}
+                    />
+                    <span className="text-sm text-black">{entry.name.split("_").join(" ")}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  })
+
+
+  async function getPRData() {
+    try {
+      const res = await getPRDataService()
+      setPrData(res)
+      console.log(res)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -166,7 +287,7 @@ export function DeveloperDashboard() {
         </CardHeader>
         <CardContent>
           {viewMode === "table" ? (
-            <DataTable columns={tableColumns} data={tableData} />
+            <DataTable columns={tableColumns} data={prData} />
           ) : (
             <DataChart data={chartData} />
           )}
@@ -174,4 +295,26 @@ export function DeveloperDashboard() {
       </Card>
     </div>
   )
+}
+
+
+const CustomPieTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const { name } = payload[0].payload;
+    return (
+      <div className="bg-white p-2 rounded shadow text-black">
+        {name.split("_").join(" ")}
+      </div>
+    );
+  }
+  return null;
+};
+
+
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
 }

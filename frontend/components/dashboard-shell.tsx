@@ -94,7 +94,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
           <div className="ml-auto flex items-center gap-4">
-            <ModeToggle />
+            {/* <ModeToggle /> */}
             <Avatar>
               <AvatarImage src="/abstract-geometric-shapes.png" />
               <AvatarFallback>JD</AvatarFallback>
