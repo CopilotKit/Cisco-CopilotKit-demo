@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from "@/components/data-table"
 import { DataChart } from "@/components/data-chart"
@@ -16,6 +16,7 @@ import { PRReviewBarData } from "./pr-review-bar-data"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { PRPieFilterData } from "./pr-pie-filter-data"
 import { PRLineChartData } from "./pr-line-chart-data"
+import { Loader } from "./ui/loader"
 // Sample data for the developer dashboard
 const tableColumns = [
   {
@@ -100,6 +101,9 @@ export function DeveloperDashboard() {
   const [filteredData, setFilteredData] = useState<PRData[]>([])
   const [filterParams, setFilterParams] = useState<{ status: string, author: string }>({ status: "a", author: "b" })
   const [viewMode, setViewMode] = useState<"table" | "chart">("table")
+  const [isLoading, setIsLoading] = useState(true)
+  const ref1 = useRef(null)
+  const ref2 = useRef(null)
   useEffect(() => {
     getPRData()
   }, [])
@@ -149,12 +153,12 @@ export function DeveloperDashboard() {
         description: "The id of the user for whom the PR data is to be fetched",
       },
       {
-        name : "dayCount",
-        type : "number",
-        description : "The number of days to be considered for the PR data"
+        name: "dayCount",
+        type: "number",
+        description: "The number of days to be considered for the PR data"
       }
     ],
-    render : ({args} : any) => {
+    render: ({ args }: any) => {
       return <PRPieFilterData args={args} />
     }
   })
@@ -169,7 +173,7 @@ export function DeveloperDashboard() {
         description: "The id of the user for whom the PR data is to be fetched",
       }
     ],
-    render : ({args} : any) => {
+    render: ({ args }: any) => {
       return <PRLineChartData args={args} />
     }
   })
@@ -180,6 +184,7 @@ export function DeveloperDashboard() {
       const res = await getPRDataService()
       setPrData(res)
       setFilteredData(res)
+      setIsLoading(false)
     } catch (error) {
       console.log(error)
     }
@@ -188,6 +193,7 @@ export function DeveloperDashboard() {
 
   return (
     <div className="space-y-6">
+      {isLoading && <Loader />}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-semibold tracking-tight">Developer Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -255,8 +261,11 @@ export function DeveloperDashboard() {
                 <SelectItem value="docs">docs</SelectItem>
               </SelectContent> */}
             </Select>
-            { viewMode === "table" && <Select value={filterParams.status} onValueChange={(e) => {
+            {viewMode === "table" && <Select value={filterParams.status} onValueChange={(e) => {
+
               debugger
+              console.log(ref2.current);
+              
               setFilterParams({ ...filterParams, status: e })
               if (filterParams.author === "b") {
                 setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === e?.toLowerCase()))
@@ -267,7 +276,7 @@ export function DeveloperDashboard() {
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent ref={ref1}>
                 <SelectItem value="a">All Statuses</SelectItem>
                 <SelectItem value="approved">approved</SelectItem>
                 <SelectItem value="needs revision">needs revision</SelectItem>
@@ -288,7 +297,7 @@ export function DeveloperDashboard() {
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Author" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent ref={ref2}>
                 <SelectItem value="b">All Authors</SelectItem>
                 <SelectItem value="Jon.snow@got.com">Jon.snow@got.com</SelectItem>
                 <SelectItem value="robert.baratheon@got.com">robert.baratheon@got.com</SelectItem>
