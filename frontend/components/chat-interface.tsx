@@ -20,7 +20,7 @@ export function ChatInterface() {
         <h2 className="font-semibold">EnterpriseX Assistant</h2>
       </div>
       <CopilotChat className="h-full"
-        instructions={`You are a helpful assistant that can help the user with their questions and tasks. Always assume username is "Jon Snow". If user asks someone's PR dont show the data in just text, use GetPRDataForAUser tool to show the data in pie-chart. When searching for a user's PR data, use the following data:  ${JSON.stringify(prData)}`}
+        instructions={`You are a helpful assistant that can help the user with their questions and tasks. Always assume username is "Jon Snow". If user asks someone's PR dont show the data in just text, use GenerateChartBasedOnUserPRData tool to show the data in pie-chart. Once generated the chart, just reply with a summary of the chart. Dont generate the entire data once again. When searching for a user's PR data, use the following data:  ${JSON.stringify(prData)}`}
       />
     </div>
   )

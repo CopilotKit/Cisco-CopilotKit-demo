@@ -4,7 +4,7 @@ import { useSharedContext } from "@/lib/shared-context";
 import { useEffect, useState } from "react";
 import { Pie, PieChart, Tooltip } from "recharts";
 
-export function PRPieData(args: any) {
+export function PRPieData({ args }: any) {
     const [userPRData, setUserPRData] = useState<any[]>([])
     const { prData } = useSharedContext()
     const status = [{
