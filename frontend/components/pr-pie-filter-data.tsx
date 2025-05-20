@@ -3,8 +3,10 @@ import { PRData } from "@/app/Interfaces/interface";
 import { useSharedContext } from "@/lib/shared-context";
 import { useEffect, useState } from "react";
 import { Pie, PieChart, Tooltip } from "recharts";
+import { CustomPieTooltip } from "./pr-pie-all-data";
+import { chunkArray } from "./pr-pie-all-data";
 
-export function PRPieData({ args }: any) {
+export function PRPieFilterData({ args }: any) {
     const [userPRData, setUserPRData] = useState<any[]>([])
     const { prData } = useSharedContext()
     const status = [{
@@ -25,12 +27,24 @@ export function PRPieData({ args }: any) {
         value: "rgb(147 197 253)"
     }]
     useEffect(() => {
-        console.log(args?.userId, prData.filter((pr: PRData) => pr.userId === args?.userId))
-        console.log(args?.userId)
-        const pieData = Object.entries(getStatusCounts(prData.filter((pr: PRData) => pr.userId === args?.userId))).map(([status, count]) => ({
+        const now = new Date();
+        const pieData = Object.entries(
+            getStatusCounts(
+                prData.filter((pr: PRData) => {
+                    if(args?.userId) {
+                        if (pr.userId !== args?.userId) return false;
+                    }
+                    if (!pr.createdAt) return false;
+                    const createdDate = new Date(pr.createdAt);
+                    const diffDays = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+                    return diffDays <= args.dayCount;
+                })
+            )
+        ).map(([status, count]) => ({
             name: status,
             value: count,
         }));
+        console.log(pieData)
         setUserPRData(pieData)
     }, [args])
     const getStatusCounts = (data: PRData[]) => {
@@ -42,6 +56,7 @@ export function PRPieData({ args }: any) {
     return (
         <div className="flex-1 p-4 rounded-2xl shadow-lg flex flex-col items-center min-w-[250px] max-w-[350px]">
             <h2 className="text-xl font-semibold mb-2 text-gray-700 text-center">PR Status Distribution</h2>
+            {/* <h2 className="text-xl font-semibold mb-2 text-gray-700 text-center">DANDTIME</h2> */}
             <div className="h-[180px] flex flex-col items-center justify-center">
                 <PieChart width={260} height={180}>
                     <Pie
@@ -83,26 +98,4 @@ export function PRPieData({ args }: any) {
             </div>
         </div>
     )
-}
-
-
-export const CustomPieTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-        const { name } = payload[0].payload;
-        return (
-            <div className="bg-white p-2 rounded shadow text-black">
-                {name.split("_").join(" ")}
-            </div>
-        );
-    }
-    return null;
-};
-
-
-function chunkArray(array: any, size: number) {
-    const result = [];
-    for (let i = 0; i < array.length; i += size) {
-        result.push(array.slice(i, i + size));
-    }
-    return result;
 }

@@ -5,17 +5,17 @@ import { Pie, PieChart, Cell, Tooltip } from "recharts"
 import { useSharedContext } from "@/lib/shared-context"
 import { useEffect, useState } from "react"
 import { PRData, chartData } from "@/app/Interfaces/interface"
-import { CustomPieTooltip } from "./pr-pie-data"
+import { CustomPieTooltip } from "./pr-pie-all-data"
 
 interface DataChartProps {
-  data: Record<string, any>[]
+  data: PRData[]
 }
 
 export function DataChart({ data }: DataChartProps) {
   // Extract keys excluding 'name'
   // const dataKeys = Object.keys(data[0]).filter((key) => key !== "name")
   const [chartData, setChartData] = useState<chartData[]>([])
-  const {prData} = useSharedContext()
+  // const {prData} = useSharedContext()
   const status = [{
     name: "approved",
     color: "bg-green-300",
@@ -34,14 +34,14 @@ export function DataChart({ data }: DataChartProps) {
     value: "rgb(147 197 253)"
   }]
   useEffect(() => {
-    let data = status.map((status) => {
+    let buffer = status.map((status) => {
       return {
         name: status.name,
-        value: prData.filter((pr : PRData)  => pr.status === status.name).length
+        value: data.filter((pr : PRData)  => pr.status === status.name).length
       }
     })
-    setChartData(data)
-  }, [])
+    setChartData(buffer)
+  }, [data])
 
   // Generate colors for each data key
   const colors = [

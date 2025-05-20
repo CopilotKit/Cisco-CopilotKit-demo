@@ -5,14 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DataTable } from "@/components/data-table"
 import { DataChart } from "@/components/data-chart"
 import { Button } from "@/components/ui/button"
-import { BarChart3, Table2 } from "lucide-react"
+import { BarChart3, Table2, Filter } from "lucide-react"
 import { getPRDataService } from "@/app/Services/service"
 import { PRData } from "@/app/Interfaces/interface"
 import { useSharedContext } from "@/lib/shared-context"
 import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core"
 import { PieChart, Pie, Cell, Tooltip } from "recharts"
-import { PRPieData } from "./pr-pie-data"
+import { PRPieData } from "./pr-pie-all-data"
 import { PRReviewBarData } from "./pr-review-bar-data"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { PRPieFilterData } from "./pr-pie-filter-data"
+import { PRLineChartData } from "./pr-line-chart-data"
 // Sample data for the developer dashboard
 const tableColumns = [
   {
@@ -94,6 +97,8 @@ const status = [{
 
 export function DeveloperDashboard() {
   const { prData, setPrData } = useSharedContext()
+  const [filteredData, setFilteredData] = useState<PRData[]>([])
+  const [filterParams, setFilterParams] = useState<{ status: string, author: string }>({ status: "a", author: "b" })
   const [viewMode, setViewMode] = useState<"table" | "chart">("table")
   useEffect(() => {
     getPRData()
@@ -134,15 +139,52 @@ export function DeveloperDashboard() {
     }
   })
 
+  useCopilotAction({
+    name: "GenerateChartBasedOnFilteredDateAndTime",
+    description: `Generate a Pie-chart based on the PR data which lies between the given date and time`,
+    parameters: [
+      {
+        name: "userId",
+        type: "number",
+        description: "The id of the user for whom the PR data is to be fetched",
+      },
+      {
+        name : "dayCount",
+        type : "number",
+        description : "The number of days to be considered for the PR data"
+      }
+    ],
+    render : ({args} : any) => {
+      return <PRPieFilterData args={args} />
+    }
+  })
+
+  useCopilotAction({
+    name: "GenerateLineChartToShowPRCreationTrend",
+    description: `Generate a Line-chart based on the PR data which shows the trend of PR creation over time`,
+    parameters: [
+      {
+        name: "userId",
+        type: "number",
+        description: "The id of the user for whom the PR data is to be fetched",
+      }
+    ],
+    render : ({args} : any) => {
+      return <PRLineChartData args={args} />
+    }
+  })
+
 
   async function getPRData() {
     try {
       const res = await getPRDataService()
       setPrData(res)
+      setFilteredData(res)
     } catch (error) {
       console.log(error)
     }
   }
+
 
   return (
     <div className="space-y-6">
@@ -197,12 +239,71 @@ export function DeveloperDashboard() {
         <CardHeader>
           <CardTitle>Repository Performance</CardTitle>
           <CardDescription>Monitor build times and test coverage across repositories</CardDescription>
+          <div className="flex flex-wrap gap-4 mt-4 items-center">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filters:</span>
+            </div>
+            <Select>
+              {/* <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Repository" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a">All Repositories</SelectItem>
+                <SelectItem value="frontend">frontend</SelectItem>
+                <SelectItem value="backend">backend</SelectItem>
+                <SelectItem value="docs">docs</SelectItem>
+              </SelectContent> */}
+            </Select>
+            { viewMode === "table" && <Select value={filterParams.status} onValueChange={(e) => {
+              debugger
+              setFilterParams({ ...filterParams, status: e })
+              if (filterParams.author === "b") {
+                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === e?.toLowerCase()))
+              } else {
+                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === e?.toLowerCase() && pr.author.toLowerCase() === filterParams.author?.toLowerCase()))
+              }
+            }}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a">All Statuses</SelectItem>
+                <SelectItem value="approved">approved</SelectItem>
+                <SelectItem value="needs revision">needs revision</SelectItem>
+                <SelectItem value="merged">merged</SelectItem>
+                <SelectItem value="in review">in review</SelectItem>
+              </SelectContent>
+            </Select>}
+            <Select value={filterParams.author} onValueChange={(e) => {
+              debugger
+              setFilterParams({ ...filterParams, author: e })
+              if (filterParams.status === "a") {
+                setFilteredData(prData.filter((pr: PRData) => pr.author.toLowerCase() === e?.toLowerCase()))
+              } else {
+                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === filterParams.status?.toLowerCase() && pr.author.toLowerCase() === e?.toLowerCase()))
+              }
+              // setFilteredData(prData.filter((pr: PRData) => pr.author.toLowerCase() === e?.toLowerCase()))
+            }}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Author" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="b">All Authors</SelectItem>
+                <SelectItem value="Jon.snow@got.com">Jon.snow@got.com</SelectItem>
+                <SelectItem value="robert.baratheon@got.com">robert.baratheon@got.com</SelectItem>
+                <SelectItem value="ned.stark@got.com">ned.stark@got.com</SelectItem>
+                <SelectItem value="cersei.lannister@got.com">cersei.lannister@got.com</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => { setFilteredData(prData); setFilterParams({ status: "a", author: "b" }) }} variant="ghost" size="sm">Clear Filters</Button>
+          </div>
         </CardHeader>
         <CardContent>
           {viewMode === "table" ? (
-            <DataTable columns={tableColumns} data={prData} />
+            <DataTable columns={tableColumns} data={filteredData} />
           ) : (
-            <DataChart data={chartData} />
+            <DataChart data={filteredData} />
           )}
         </CardContent>
       </Card>

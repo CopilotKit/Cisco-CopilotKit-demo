@@ -1,13 +1,5 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { SendHorizontal, X } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { CopilotKit } from '@copilotkit/react-core';
 import { CopilotChat } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import { useSharedContext } from "@/lib/shared-context";

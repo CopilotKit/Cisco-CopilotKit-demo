@@ -17,3 +17,8 @@ export interface chartData {
     name: string;
     value: number;
 }
+
+export interface WeeklyCount {
+    week: string;
+    count: number;
+}

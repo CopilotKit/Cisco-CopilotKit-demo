@@ -50,7 +50,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-full flex-1">
       <Sidebar side="left" className="border-r">
-        <SidebarHeader className="flex items-center justify-between px-4 py-2">
+        <SidebarHeader className="flex justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <LayoutDashboard className="h-6 w-6" />
             <h1 className="text-xl font-semibold tracking-tight">EnterpriseX</h1>
@@ -59,7 +59,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <SidebarContent>
           <SidebarMenu>
             {routes.map((route) => (
-              <SidebarMenuItem key={route.href}>
+              <SidebarMenuItem key={route.href} className="p-3 px-6" >
                 <SidebarMenuButton asChild isActive={route.isActive}>
                   <Link href={route.href}>
                     <route.icon className="mr-2 h-5 w-5" />
