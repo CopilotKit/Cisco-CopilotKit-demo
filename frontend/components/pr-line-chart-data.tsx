@@ -9,18 +9,9 @@ export function PRLineChartData({ args }: any) {
     useEffect(() => {
         console.log(args);
         
-        let weeklyData
-        if(args?.userId) {  
-            weeklyData = groupPRsByWeek(prData.filter((pr: PRData) => pr.userId === args.userId))
-        } else {
-            weeklyData = groupPRsByWeek(prData)
+        if(args?.data) {
+            setLineData(args.data)
         }
-        weeklyData = weeklyData.map((item: WeeklyCount) => ({
-            ...item,
-            week: item.week.split("-").slice(1,3).join("/")
-        }))
-        console.log(weeklyData)
-        setLineData(weeklyData)
     }, [args])
 
     function groupPRsByWeek(prs: PRData[]): WeeklyCount[] {
@@ -50,7 +41,7 @@ export function PRLineChartData({ args }: any) {
             <div className="h-[200px] w-full flex items-center justify-center">
                 <LineChart width={520} height={220} data={lineData}>
                     <CartesianGrid strokeDasharray="4 4" stroke="#B6C7DB" />
-                    <XAxis dataKey="week" stroke="#4F5A66" />
+                    <XAxis dataKey="name" stroke="#4F5A66" />
                     <YAxis stroke="#4F5A66" />
                     {/* <Tooltip content={<CustomPieTooltip />} /> */}
                     <Legend
@@ -60,7 +51,7 @@ export function PRLineChartData({ args }: any) {
                         align="center"
                         wrapperStyle={{ color: 'black', fontSize: '12px', paddingLeft: 10 }}
                     />
-                    <Line type="monotone" dataKey="count" stroke="rgb(134 239 172)" strokeWidth={4} dot={{ r: 8, strokeWidth: 2 }} />
+                    <Line type="monotone" dataKey="value" stroke="rgb(134 239 172)" strokeWidth={4} dot={{ r: 8, strokeWidth: 2 }} />
                     {/* <Line type="monotone" dataKey="merged" stroke="#475569" strokeWidth={3} dot={{ r: 5 }} /> */}
                     {/* <Line type="monotone" dataKey="closed" stroke="#B6C7DB" strokeWidth={3} dot={{ r: 5 }} /> */}
                 </LineChart>

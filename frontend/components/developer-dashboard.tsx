@@ -40,61 +40,6 @@ const tableColumns = [
     header: "STATUS",
   },
 ]
-const chartData = [
-  {
-    name: "Mon",
-    "Build Time": 45,
-    "Test Coverage": 78,
-  },
-  {
-    name: "Tue",
-    "Build Time": 52,
-    "Test Coverage": 82,
-  },
-  {
-    name: "Wed",
-    "Build Time": 48,
-    "Test Coverage": 85,
-  },
-  {
-    name: "Thu",
-    "Build Time": 61,
-    "Test Coverage": 79,
-  },
-  {
-    name: "Fri",
-    "Build Time": 55,
-    "Test Coverage": 83,
-  },
-  {
-    name: "Sat",
-    "Build Time": 42,
-    "Test Coverage": 86,
-  },
-  {
-    name: "Sun",
-    "Build Time": 38,
-    "Test Coverage": 90,
-  },
-]
-
-const status = [{
-  name: "approved",
-  color: "bg-green-300",
-  value: "rgb(134 239 172)"
-}, {
-  name: "needs_revision",
-  color: "bg-yellow-300",
-  value: "rgb(253 224 71)"
-}, {
-  name: "merged",
-  color: "bg-purple-300",
-  value: "rgb(216 180 254)"
-}, {
-  name: "in_review",
-  color: "bg-blue-300",
-  value: "rgb(147 197 253)"
-}]
 
 export function DeveloperDashboard() {
   const { prData, setPrData } = useSharedContext()
@@ -102,8 +47,6 @@ export function DeveloperDashboard() {
   const [filterParams, setFilterParams] = useState<{ status: string, author: string }>({ status: "a", author: "b" })
   const [viewMode, setViewMode] = useState<"table" | "chart">("table")
   const [isLoading, setIsLoading] = useState(true)
-  const ref1 = useRef(null)
-  const ref2 = useRef(null)
   useEffect(() => {
     getPRData()
   }, [])
@@ -113,29 +56,55 @@ export function DeveloperDashboard() {
     value: JSON.stringify(prData)
   })
 
+  useCopilotReadable({
+    description: "The currently logged in username and userId",
+    value: JSON.stringify({ username: "Jon.Snow@got.com", userId: 1 })
+  })
+
   useCopilotAction({
-    name: "GenerateChartBasedOnUserPRData",
-    description: `Generate a pie-chart based on the PR data for a user`,
+    name: "renderData_PieChart",
+    description: `Render a Pie-chart for labelled numeric data. Example input format: [{"name": "approved", "value": 25, "shortName": "Approved", "color": "rgb(134 239 172)"}, {"name": "in_review", "value": 15, "shortName": "In Review", "color": "rgb(216 180 254)"}, {"name": "needs_revision", "value": 10, "shortName": "Needs Revision", "color": "rgb(253 224 71)"}, {"name": "merged", "value": 5, "shortName": "Merged", "color": "rgb(147 197 253)"}] When assigning color, use the same colors if data is related to status otherwise generate random colors. Provide short name for the item in the input if the name is long. Keep it the same as the name if the name is short. For example, If the name is Jon.snow@got.com, then the short name is Jon`,
     parameters: [
       {
-        name: "userId",
-        type: "number",
-        description: "The id of the user for whom the PR data is to be fetched",
+        name: "items",
+        type: "object[]",
+        description: "Array of items to be displayed in the pie chart",
+        required: true,
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Name of the item", required: true },
+            shortName: { type: "string", description: "Short Name of the item", required: true },
+            value: { type: "number", description: "Value of the item", required: true },
+            color: { type: "string", description: "Color of the item", required: true }
+          }
+        }
       }
     ],
     render: ({ args }: any) => {
       return <PRPieData args={args} />
+
+
     }
   })
 
   useCopilotAction({
-    name: "GenerateChartBasedOnPRReviewStatus",
-    description: `Generate a bar-chart based on the PR data which are only in needs_revision or in_review status for specific user`,
+    name: "renderData_BarChart",
+    description: `Render a Bar-chart for labelled numeric data. Example input format: [{"name": "approved", "value": 25, "color": "rgb(134 239 172)"}, {"name": "in_review", "value": 15, "color": "rgb(216 180 254)"}, {"name": "needs_revision", "value": 10, "color": "rgb(253 224 71)"}, {"name": "merged", "value": 5, "color": "rgb(147 197 253)"}] When assigning color, use the same colors if data is related to status otherwise generate random colors. Provide short name for the item in the input if the name is long. Keep it the same as the name if the name is short. For example, If the name is Jon.snow@got.com, then the short name is Jon`,
     parameters: [
       {
-        name: "userId",
-        type: "number",
-        description: "The id of the user for whom the PR data is to be fetched",
+        name: "items",
+        type: "object[]",
+        description: "Array of items to be displayed in the bar chart",
+        required: true,
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Name of the item", required: true },
+            value: { type: "number", description: "Value of the item", required: true },
+            // color: { type: "string", description: "Color of the item", required: true }
+          }
+        }
       }
     ],
     render: ({ args }: any) => {
@@ -143,40 +112,65 @@ export function DeveloperDashboard() {
     }
   })
 
-  useCopilotAction({
-    name: "GenerateChartBasedOnFilteredDateAndTime",
-    description: `Generate a Pie-chart based on the PR data which lies between the given date and time`,
-    parameters: [
-      {
-        name: "userId",
-        type: "number",
-        description: "The id of the user for whom the PR data is to be fetched",
-      },
-      {
-        name: "dayCount",
-        type: "number",
-        description: "The number of days to be considered for the PR data"
-      }
-    ],
-    render: ({ args }: any) => {
-      return <PRPieFilterData args={args} />
-    }
-  })
 
   useCopilotAction({
-    name: "GenerateLineChartToShowPRCreationTrend",
-    description: `Generate a Line-chart based on the PR data which shows the trend of PR creation over time`,
+    name: "renderData_LineChart",
+    description: `Render a Line-chart based on the PR data which shows the trend of PR creation over time. Example input format: [{"name": "12/25", "value": 10}, {"name": "7/22", "value": 20}, {"name": "12/18", "value": 30}]. If dates are present convert them to the format "MM/DD". Also if name length is long, provide short name for the item in the input. For example, If the name is Jon.snow@got.com, then the short name is Jon`,
     parameters: [
       {
-        name: "userId",
-        type: "number",
-        description: "The id of the user for whom the PR data is to be fetched",
+        name: "items",
+        type: "object[]",
+        description: "The data to be displayed in the line chart",
+        required: true,
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "The name of the item", required: true },
+          }
+        }
       }
     ],
     render: ({ args }: any) => {
       return <PRLineChartData args={args} />
     }
   })
+
+
+  useCopilotAction({
+    name: "renderData_Table",
+    description: `Render a table based on the PR data. Example input format: {id: 'PR22',title: 'Add Longclaw sword animation effects',status: 'needs_revision',assignedReviewer: 'lisa.martin@got.com',assignedTester: 'sarah.wilson@got.com',daysSinceStatusChange: 2,createdAt: '2025-04-22T18:41:32.868Z',updatedAt: '2025-05-18T04:36:14.176Z',userId: 1,author: 'Jon.snow@got.com',repository: 'frontend',branch: 'feature/longclaw-animations'}`,
+    parameters: [
+      {
+        name: "items",
+        type: "object[]",
+        description: "The data to be displayed in the table. It should be an array of objects",
+        required: true,
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The id of the PR", required: true },
+            title: { type: "string", description: "The title of the PR", required: true },
+            status: { type: "string", description: "The status of the PR", required: true },
+            assignedReviewer: { type: "string", description: "The assigned reviewer of the PR", required: true },
+            assignedTester: { type: "string", description: "The assigned tester of the PR", required: true },
+            daysSinceStatusChange: { type: "number", description: "The number of days since the status of the PR was changed", required: true },
+            createdAt: { type: "string", description: "The date and time when the PR was created", required: true },
+            updatedAt: { type: "string", description: "The date and time when the PR was last updated", required: true },
+            userId: { type: "number", description: "The id of the user who created the PR", required: true },
+            author: { type: "string", description: "The author of the PR", required: true },
+            repository: { type: "string", description: "The repository of the PR", required: true },
+            branch: { type: "string", description: "The branch of the PR", required: true },
+          }
+
+        }
+      }
+    ],
+    handler: (items: any) => {
+      debugger
+      setFilteredData(items.data)
+    }
+  })
+
 
 
   async function getPRData() {
@@ -208,14 +202,14 @@ export function DeveloperDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      {/* <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>Repositories</CardTitle>
             <CardDescription>Total active repositories</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">12</div>
+            <div className="text-3xl font-bold">8</div>
             <p className="text-xs text-muted-foreground">+2 from last month</p>
           </CardContent>
         </Card>
@@ -239,7 +233,7 @@ export function DeveloperDashboard() {
             <p className="text-xs text-muted-foreground">Improved from A</p>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       <Card>
         <CardHeader>
@@ -252,31 +246,24 @@ export function DeveloperDashboard() {
             </div>
             <Select>
               {/* <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Repository" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="a">All Repositories</SelectItem>
-                <SelectItem value="frontend">frontend</SelectItem>
-                <SelectItem value="backend">backend</SelectItem>
-                <SelectItem value="docs">docs</SelectItem>
-              </SelectContent> */}
+<SelectValue placeholder="Repository" />
+  </SelectTrigger>
+  <SelectContent>
+<SelectItem value="a">All Repositories</SelectItem>
+<SelectItem value="frontend">frontend</SelectItem>
+<SelectItem value="backend">backend</SelectItem>
+<SelectItem value="docs">docs</SelectItem>
+  </SelectContent> */}
             </Select>
             {viewMode === "table" && <Select value={filterParams.status} onValueChange={(e) => {
-
               debugger
-              console.log(ref2.current);
-              
               setFilterParams({ ...filterParams, status: e })
-              if (filterParams.author === "b") {
-                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === e?.toLowerCase()))
-              } else {
-                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === e?.toLowerCase() && pr.author.toLowerCase() === filterParams.author?.toLowerCase()))
-              }
+
             }}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent ref={ref1}>
+              <SelectContent>
                 <SelectItem value="a">All Statuses</SelectItem>
                 <SelectItem value="approved">approved</SelectItem>
                 <SelectItem value="needs revision">needs revision</SelectItem>
@@ -287,17 +274,11 @@ export function DeveloperDashboard() {
             <Select value={filterParams.author} onValueChange={(e) => {
               debugger
               setFilterParams({ ...filterParams, author: e })
-              if (filterParams.status === "a") {
-                setFilteredData(prData.filter((pr: PRData) => pr.author.toLowerCase() === e?.toLowerCase()))
-              } else {
-                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === filterParams.status?.toLowerCase() && pr.author.toLowerCase() === e?.toLowerCase()))
-              }
-              // setFilteredData(prData.filter((pr: PRData) => pr.author.toLowerCase() === e?.toLowerCase()))
             }}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Author" />
               </SelectTrigger>
-              <SelectContent ref={ref2}>
+              <SelectContent>
                 <SelectItem value="b">All Authors</SelectItem>
                 <SelectItem value="Jon.snow@got.com">Jon.snow@got.com</SelectItem>
                 <SelectItem value="robert.baratheon@got.com">robert.baratheon@got.com</SelectItem>
@@ -305,6 +286,17 @@ export function DeveloperDashboard() {
                 <SelectItem value="cersei.lannister@got.com">cersei.lannister@got.com</SelectItem>
               </SelectContent>
             </Select>
+            <Button onClick={() => {
+              if (filterParams.status === "a" && filterParams.author === "b") {
+                setFilteredData(prData)
+              } else if (filterParams.status === "a") {
+                setFilteredData(prData.filter((pr: PRData) => pr.author.toLowerCase() === filterParams.author?.toLowerCase()))
+              } else if (filterParams.author === "b") {
+                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === filterParams.status?.toLowerCase()))
+              } else {
+                setFilteredData(prData.filter((pr: PRData) => pr.status.split("_").join(" ").toLowerCase() === filterParams.status?.toLowerCase() && pr.author.toLowerCase() === filterParams.author?.toLowerCase()))
+              }
+            }} variant="ghost" size="sm">Apply Filters</Button>
             <Button onClick={() => { setFilteredData(prData); setFilterParams({ status: "a", author: "b" }) }} variant="ghost" size="sm">Clear Filters</Button>
           </div>
         </CardHeader>
